@@ -306,11 +306,12 @@ def main():
         print("❌ JobQueue not initialized!")
     
     # ------ تشغيل Webhook ------
-app.run_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    webhook_url="https://mybot-q5ta.onrender.com/webhook",  # <-- هنا كانت الفاصلة ناقصة!
-)
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url="https://mybot-q5ta.onrender.com/webhook",
+        secret_token='YOUR_SECRET_TOKEN'
+    )
 
 if __name__ == '__main__':
     main()
