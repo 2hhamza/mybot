@@ -254,12 +254,8 @@ async def send_alerts(context: ContextTypes.DEFAULT_TYPE):
 
 # ------ تشغيل البوت عبر Webhook ------
 def main():
-    TOKEN = os.getenv('TELEGRAM_TOKEN')
-    PORT = int(os.getenv('PORT', 8080))
-    
-    if not TOKEN:
-        print("❌ Error: TELEGRAM_TOKEN not set!")
-        return
+    TOKEN = os.getenv('TELEGRAM_TOKEN')  # التوكن من المتغيرات البيئية
+    PORT = int(os.getenv('PORT', 8080))  # المنفذ من Render
     
     app = (
         Application.builder()
@@ -269,7 +265,7 @@ def main():
         .build()
     )
     
-    # ------ إعداد ConversationHandler ------
+    # ------ إعداد Handlers ------
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -286,7 +282,7 @@ def main():
             MANAGE_ALERTS: [CallbackQueryHandler(delete_alert, pattern='^edit_')]
         },
         fallbacks=[],
-        per_message=True,  # إصلاح تحذير per_message
+        per_message=False,  # تم التعديل إلى False
         allow_reentry=True
     )
     
@@ -302,15 +298,13 @@ def main():
     if job_queue:
         job_queue.run_repeating(send_alerts, interval=30, first=10)
         print("✅ تم تفعيل JobQueue!")
-    else:
-        print("❌ JobQueue not initialized!")
     
     # ------ تشغيل Webhook ------
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
         webhook_url="https://mybot-q5ta.onrender.com/webhook",
-        secret_token='YOUR_SECRET_TOKEN'
+        secret_token=os.getenv('SECRET_TOKEN', 'default_secret')
     )
 
 if __name__ == '__main__':
