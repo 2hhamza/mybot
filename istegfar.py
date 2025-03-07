@@ -269,7 +269,12 @@ async def start_web_server():
 # ------ الدالة الرئيسية ------
 async def main():
     TOKEN = "7543964180:AAHPhEJ8TOcENqsM-FXqkFUJaUhNrBbV8r8"
-    app = Application.builder().token(TOKEN).build()
+    app = (
+        Application.builder()
+        .token(TOKEN)
+        .arbitrary_callback_data(True)  # إصلاح تحذير per_message
+        .build()
+    )
     
     # ------ إعداد ال Handlers ------
     conv_handler = ConversationHandler(
@@ -300,7 +305,7 @@ async def main():
     
     # ------ تفعيل المهام الدورية ------
     job_queue = app.job_queue
-    job_queue.run_repeating(send_alerts, interval=30, first=10)
+    app.job_queue.run_repeating(send_alerts, interval=30, first=10)
     
     # ------ حذف Webhook السابق ------
     await app.bot.delete_webhook()
