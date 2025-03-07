@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 from aiohttp import web
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -12,12 +13,18 @@ from telegram.ext import (
     ContextTypes,
 )
 
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 # Configuration
-TOKEN = os.environ.get("TOKEN")
+TOKEN = os.environ.get("TOKEN")  # Must be set in Render's environment variables
 PORT = 8080  # Render's required port
 
 # Conversation states
-START, CHOOSE_SINS, CUSTOM_SIN = range(3)
+CHOOSE_SINS, CUSTOM_SIN = range(2)
 
 # ======================
 # Bot Handlers
@@ -78,7 +85,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # ==================
 
 async def health_check(request):
-    return web.Response(text="Bot is operational!")
+    return web.Response(text="Bot is running!")
 
 async def run_web_server():
     app = web.Application()
@@ -87,16 +94,17 @@ async def run_web_server():
     await runner.setup()
     site = web.TCPSite(runner, port=PORT)
     await site.start()
-    print(f"🌐 Web server ready on port {PORT}")
+    logger.info(f"Web server started on port {PORT}")
     return runner
 
 # ==============
-# Main Setup
+# Bot Setup
 # ==============
 
 async def setup_bot():
     application = Application.builder().token(TOKEN).build()
 
+    # Conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -107,15 +115,16 @@ async def setup_bot():
             ]
         },
         fallbacks=[],
-        per_message=True  # Critical fix for callback tracking
+        per_message=True  # Required for proper callback handling
     )
 
     application.add_handler(conv_handler)
     application.add_handler(CallbackQueryHandler(button_handler))
-    
+
+    # Initialize bot
     await application.initialize()
     await application.start()
-    print("🤖 Bot is now polling for updates")
+    logger.info("Bot started polling for updates")
     return application
 
 # ==============
@@ -125,13 +134,18 @@ async def setup_bot():
 async def main():
     web_runner = await run_web_server()
     bot_app = await setup_bot()
-    
+
     try:
+        # Keep both services running
         while True:
             await asyncio.sleep(3600)
+    except asyncio.CancelledError:
+        pass
     finally:
         await bot_app.stop()
+        await bot_app.shutdown()
         await web_runner.cleanup()
+        logger.info("Services stopped gracefully")
 
 if __name__ == "__main__":
     asyncio.run(main())
