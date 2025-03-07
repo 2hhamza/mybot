@@ -294,7 +294,7 @@ async def main():
             MANAGE_ALERTS: [CallbackQueryHandler(delete_alert, pattern='^edit_')]
         },
         fallbacks=[],
-        per_message=False,
+        per_message=False,  # تم تعطيل هذا الإعداد
         allow_reentry=True
     )
     
@@ -312,7 +312,7 @@ async def main():
     await app.bot.delete_webhook()
     
     # ------ تشغيل خادم الويب في الخلفية ------
-    asyncio.create_task(start_web_server())
+    await start_web_server()
     
     # ------ بدء استقبال التحديثات ------
     await app.run_polling()
