@@ -303,7 +303,7 @@ def main():
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        webhook_url="https://mybot-q5ta.onrender.com/webhook",
+        webhook_url="https://mybot-fkxn.onrender.com/webhook",
         secret_token=os.getenv('SECRET_TOKEN', 'default_secret')
     )
 
