@@ -275,6 +275,7 @@ async def main():
         .arbitrary_callback_data(True)  # إصلاح تحذير per_message
         .build()
     )
+
     
     # ------ إعداد ال Handlers ------
     conv_handler = ConversationHandler(
@@ -304,11 +305,13 @@ async def main():
     app.add_handler(CallbackQueryHandler(unsubscribe_all, pattern='^unsubscribe_all$'))
     
     # ------ تفعيل المهام الدورية ------
-    job_queue = app.job_queue
-    app.job_queue.run_repeating(send_alerts, interval=30, first=10)
+    job app.job_queue.run_repeating(send_alerts, interval=30, first=10)
     
     # ------ حذف Webhook السابق ------
     await app.bot.delete_webhook()
+
+    # ------ إنشاء event loop واحدة ------
+    loop = asyncio.get_event_loop()
     
     # ------ تشغيل الخادم والبوت معًا ------
     await asyncio.gather(
