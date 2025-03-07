@@ -305,7 +305,7 @@ async def main():
     app.add_handler(CallbackQueryHandler(unsubscribe_all, pattern='^unsubscribe_all$'))
     
     # ------ تفعيل المهام الدورية ------
-    job app.job_queue.run_repeating(send_alerts, interval=30, first=10)
+    app.job_queue.run_repeating(send_alerts, interval=30, first=10)
     
     # ------ حذف Webhook السابق ------
     await app.bot.delete_webhook()
