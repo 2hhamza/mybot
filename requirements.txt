@@ -1,3 +1,2 @@
 python-telegram-bot[callback-data,job-queue]==21.11.1
 aiohttp==3.11.13
-sqlite3==3.45.3
