@@ -254,7 +254,7 @@ async def send_alerts(context: ContextTypes.DEFAULT_TYPE):
 
 # ------ تشغيل البوت عبر Webhook ------
 def main():
-    TOKEN = os.getenv('TELEGRAM_TOKEN')  # التوكن من المتغيرات البيئية
+    TOKEN = os.getenv('TOKEN')  # التوكن من المتغيرات البيئية
     PORT = int(os.getenv('PORT', 8080))  # المنفذ من Render
     
     app = (
