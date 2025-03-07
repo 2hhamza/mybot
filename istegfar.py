@@ -266,21 +266,18 @@ async def start_web_server():
     await site.start()
     print("🌐 خادم الويب يعمل على المنفذ 8080")
 
-# ... (الاستيرادات تبقى كما هي)
-
+# ------ الدالة الرئيسية ------
 async def main():
     TOKEN = "7543964180:AAHPhEJ8TOcENqsM-FXqkFUJaUhNrBbV8r8"
-    
-    # ------ إنشاء تطبيق البوت مع الإعدادات الصحيحة ------
     app = (
         Application.builder()
         .token(TOKEN)
-        .arbitrary_callback_data(True)  # حل مشكلة التحذيرات
-        .concurrent_updates(True)  # تحسين الأداء
+        .arbitrary_callback_data(True)
+        .concurrent_updates(True)
         .build()
     )
     
-    # ------ إعداد ال Handlers ------
+    # ------ إعداد الـ Handlers ------
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -297,11 +294,10 @@ async def main():
             MANAGE_ALERTS: [CallbackQueryHandler(delete_alert, pattern='^edit_')]
         },
         fallbacks=[],
-        per_message=True,  # إصلاح التحذير
+        per_message=False,
         allow_reentry=True
     )
     
-    # ------ إضافة ال Handlers إلى التطبيق ------
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("list", list_command))
@@ -312,23 +308,14 @@ async def main():
     # ------ تفعيل المهام الدورية ------
     app.job_queue.run_repeating(send_alerts, interval=30, first=10)
     
-    # ------ تشغيل خادم الويب كخلفية ------
-    app.add_handler(MessageHandler(None, lambda update, context: None))  # تجنب تحذيرات PTB
-    app.create_task(start_web_server())  # تشغيل الخادم في الخلفية
+    # ------ حذف Webhook السابق ------
+    await app.bot.delete_webhook()
     
-    # ------ بدء استقبال الرسائل ------
-    await app.initialize()
-    await app.start()
-    await asyncio.sleep(99999)  # إبقاء البوت نشطًا
-
-async def start_web_server():
-    app = web.Application()
-    app.router.add_get('/', handle_health_check)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, host='0.0.0.0', port=8080)
-    await site.start()
-    print("🌐 خادم الويب يعمل على المنفذ 8080")
+    # ------ تشغيل خادم الويب في الخلفية ------
+    asyncio.create_task(start_web_server())
+    
+    # ------ بدء استقبال التحديثات ------
+    await app.run_polling()
 
 if __name__ == '__main__':
     asyncio.run(main())
