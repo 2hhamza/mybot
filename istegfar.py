@@ -1,4 +1,8 @@
-import os
+import sqlite3
+import re
+import asyncio
+from datetime import datetime, timedelta
+from aiohttp import web
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -9,9 +13,6 @@ from telegram.ext import (
     MessageHandler,
     filters
 )
-import sqlite3
-import re
-from datetime import datetime, timedelta
 
 # ------ تعريف حالات المحادثة ------
 (
@@ -252,20 +253,25 @@ async def send_alerts(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Error: {e}")
 
-# ------ تشغيل البوت عبر Webhook ------
-def main():
-    TOKEN = os.getenv('TOKEN')  # التوكن من المتغيرات البيئية
-    PORT = int(os.getenv('PORT', 8080))  # المنفذ من Render
+# ------ تشغيل خادم ويب بسيط ------
+async def handle_health_check(request):
+    return web.Response(text="🤖 البوت يعمل بنجاح!")
+
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle_health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host='0.0.0.0', port=8080)
+    await site.start()
+    print("🌐 خادم الويب يعمل على المنفذ 8080")
+
+# ------ الدالة الرئيسية ------
+async def main():
+    TOKEN = "7543964180:AAHPhEJ8TOcENqsM-FXqkFUJaUhNrBbV8r8"
+    app = Application.builder().token(TOKEN).build()
     
-    app = (
-        Application.builder()
-        .token(TOKEN)
-        .read_timeout(30)
-        .connect_timeout(30)
-        .build()
-    )
-    
-    # ------ إعداد Handlers ------
+    # ------ إعداد ال Handlers ------
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -282,7 +288,6 @@ def main():
             MANAGE_ALERTS: [CallbackQueryHandler(delete_alert, pattern='^edit_')]
         },
         fallbacks=[],
-        per_message=False,  # تم التعديل إلى False
         allow_reentry=True
     )
     
@@ -293,19 +298,18 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(unsubscribe_all, pattern='^unsubscribe_all$'))
     
-    # ------ تفعيل JobQueue ------
+    # ------ تفعيل المهام الدورية ------
     job_queue = app.job_queue
-    if job_queue:
-        job_queue.run_repeating(send_alerts, interval=30, first=10)
-        print("✅ تم تفعيل JobQueue!")
+    job_queue.run_repeating(send_alerts, interval=30, first=10)
     
-    # ------ تشغيل Webhook ------
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url="https://mybot-fkxn.onrender.com/webhook",
-        secret_token=os.getenv('SECRET_TOKEN', 'default_secret')
+    # ------ حذف Webhook السابق ------
+    await app.bot.delete_webhook()
+    
+    # ------ تشغيل الخادم والبوت معًا ------
+    await asyncio.gather(
+        start_web_server(),
+        app.run_polling()
     )
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
